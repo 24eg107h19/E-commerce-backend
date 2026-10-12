@@ -7,6 +7,7 @@ import com.ecommerce.backend.model.User;
 import com.ecommerce.backend.repository.CartItemRepository;
 import com.ecommerce.backend.repository.ProductRepository;
 import com.ecommerce.backend.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +30,13 @@ public class CartService {
         this.productRepository = productRepository;
     }
 
-    public List<CartItem> getCartItems(Long userId) {
+    public List<CartItem> getCartItems(Long userId, Long authenticatedUserId) {
+        requireOwner(userId, authenticatedUserId);
         return cartItemRepository.findByUserId(userId);
     }
 
-    public CartItem addToCart(CartItemRequest request) {
+    public CartItem addToCart(CartItemRequest request, Long authenticatedUserId) {
+        requireOwner(request.getUserId(), authenticatedUserId);
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
@@ -54,8 +57,8 @@ public class CartService {
         }
     }
 
-    public CartItem updateQuantity(Long cartItemId, int quantity) {
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
+    public CartItem updateQuantity(Long cartItemId, int quantity, Long authenticatedUserId) {
+        CartItem cartItem = cartItemRepository.findByIdAndUserId(cartItemId, authenticatedUserId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found with id: " + cartItemId));
 
         if (quantity <= 0) {
@@ -67,14 +70,20 @@ public class CartService {
         return cartItemRepository.save(cartItem);
     }
 
-    public void removeFromCart(Long cartItemId) {
-        if (!cartItemRepository.existsById(cartItemId)) {
-            throw new RuntimeException("Cart item not found with id: " + cartItemId);
-        }
-        cartItemRepository.deleteById(cartItemId);
+    public void removeFromCart(Long cartItemId, Long authenticatedUserId) {
+        CartItem cartItem = cartItemRepository.findByIdAndUserId(cartItemId, authenticatedUserId)
+                .orElseThrow(() -> new RuntimeException("Cart item not found with id: " + cartItemId));
+        cartItemRepository.delete(cartItem);
     }
 
-    public void clearCart(Long userId) {
+    public void clearCart(Long userId, Long authenticatedUserId) {
+        requireOwner(userId, authenticatedUserId);
         cartItemRepository.deleteByUserId(userId);
+    }
+
+    private void requireOwner(Long requestedUserId, Long authenticatedUserId) {
+        if (requestedUserId == null || !requestedUserId.equals(authenticatedUserId)) {
+            throw new AccessDeniedException("You may only access your own cart.");
+        }
     }
 }

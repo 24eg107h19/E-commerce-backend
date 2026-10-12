@@ -4,11 +4,14 @@ import com.ecommerce.backend.model.Product;
 import com.ecommerce.backend.model.User;
 import com.ecommerce.backend.repository.ProductRepository;
 import com.ecommerce.backend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,24 +20,37 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String adminEmail;
+    private final String adminPassword;
 
     private double increasedPrice(double price) {
         return Math.round(price * PRICE_INCREASE_MULTIPLIER * 100.0) / 100.0;
     }
 
-    public DataInitializer(UserRepository userRepository, ProductRepository productRepository) {
+    public DataInitializer(UserRepository userRepository,
+                           ProductRepository productRepository,
+                           PasswordEncoder passwordEncoder,
+                           @Value("${app.bootstrap-admin.email:}") String adminEmail,
+                           @Value("${app.bootstrap-admin.password:}") String adminPassword) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.adminEmail = adminEmail;
+        this.adminPassword = adminPassword;
     }
 
     @Override
     public void run(String... args) {
-        // Seed users if empty
-        if (userRepository.count() == 0) {
-            User admin = new User("Admin", "admin@shop.com", "admin123", "ADMIN");
-            User user = new User("John Doe", "user@shop.com", "user123", "USER");
-            userRepository.saveAll(List.of(admin, user));
-            System.out.println(">>> Sample users seeded: admin@shop.com / admin123, user@shop.com / user123");
+        if (adminEmail.isBlank() != adminPassword.isBlank()) {
+            throw new IllegalStateException("ADMIN_EMAIL and ADMIN_PASSWORD must both be configured.");
+        }
+        if (!adminEmail.isBlank()) {
+            Optional<User> existingAdmin = userRepository.findByEmail(adminEmail);
+            User admin = existingAdmin.orElseGet(() -> new User("Admin", adminEmail, "", "ADMIN"));
+            admin.setRole("ADMIN");
+            admin.setPassword(passwordEncoder.encode(adminPassword));
+            userRepository.save(admin);
         }
 
         // Seed products if empty

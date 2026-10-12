@@ -32,10 +32,10 @@ public class OrderService {
     private final EntityManager entityManager;
 
     public OrderService(OrderRepository orderRepository,
-                        CartItemRepository cartItemRepository,
-                        UserRepository userRepository,
-                        ProductRepository productRepository,
-                        EntityManager entityManager) {
+            CartItemRepository cartItemRepository,
+            UserRepository userRepository,
+            ProductRepository productRepository,
+            EntityManager entityManager) {
         this.orderRepository = orderRepository;
         this.cartItemRepository = cartItemRepository;
         this.userRepository = userRepository;
@@ -90,8 +90,7 @@ public class OrderService {
                 totalAmount,
                 "PENDING",
                 request.getShippingAddress(),
-                request.getPhoneNumber()
-        );
+                request.getPhoneNumber());
 
         for (Map.Entry<Long, Integer> requested : requestedQuantities.entrySet()) {
             Product product = products.get(requested.getKey());

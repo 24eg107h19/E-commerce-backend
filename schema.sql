@@ -57,14 +57,3 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
-
--- ========================================================
--- Seed Default Admin & User
--- ========================================================
-INSERT INTO users (name, email, password, role) 
-SELECT 'Admin', 'admin@shop.com', 'admin123', 'ADMIN'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@shop.com');
-
-INSERT INTO users (name, email, password, role) 
-SELECT 'John Doe', 'user@shop.com', 'user123', 'USER'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'user@shop.com');
