@@ -21,7 +21,8 @@ public class ProductService {
         boolean hasCategory = category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("all");
 
         if (hasSearch && hasCategory) {
-            return productRepository.findByNameContainingIgnoreCaseAndCategoryIgnoreCase(search.trim(), category.trim());
+            return productRepository.findByNameContainingIgnoreCaseAndCategoryIgnoreCase(search.trim(),
+                    category.trim());
         } else if (hasSearch) {
             return productRepository.findByNameContainingIgnoreCase(search.trim());
         } else if (hasCategory) {
